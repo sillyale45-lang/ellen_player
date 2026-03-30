@@ -12,8 +12,9 @@ body { background: #0a0a0c; color: white; font-family: "Segoe UI", sans-serif; p
 .row input { flex: 1; background: #111; border: 1px solid #9e213c; color: white; padding: 8px; outline: none; }
 .row button { background: #9e213c; border: none; color: white; padding: 0 12px; cursor: pointer; }
 #ellen-title { font-size: 12px; color: #A0C4FF; margin-bottom: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-#ellen-play { width: 60px; height: 45px; border-radius: 10px; border: 2px solid #9e213c; background: #111; color: white; font-size: 20px; cursor: pointer; }
-#ellen-vol, #ellen-progress { width: 100%; margin-top: 10px; accent-color: #9e213c; }
+#ellen-play { width: 60px; height: 45px; border-radius: 10px; border: 2px solid #9e213c; background: #111; color: white; font-size: 20px; cursor: pointer; margin-bottom: 6px; }
+#ellen-progress { width: 100%; height: 6px; accent-color: #A0C4FF; background: #222; border-radius: 4px; }
+#ellen-vol { width: 100%; accent-color: #9e213c; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -31,11 +32,12 @@ body { background: #0a0a0c; color: white; font-family: "Segoe UI", sans-serif; p
     <button id="ellen-play">▶</button>
     <input type="range" id="ellen-progress" min="0" max="100" value="0">
     <input type="range" id="ellen-vol" min="0" max="1" step="0.05" value="0.5">
-    <iframe id="ellen-player" width="0" height="0" allow="autoplay" style="border:none;"></iframe>
+    <div id="ellen-player"></div>
 </div>
 
 </div>
 
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
 const wrap = document.getElementById("ellen-wrap");
 const btn = document.getElementById("ellen-btn");
@@ -45,76 +47,119 @@ const go = document.getElementById("ellen-go");
 const play = document.getElementById("ellen-play");
 const vol = document.getElementById("ellen-vol");
 const progress = document.getElementById("ellen-progress");
-const player = document.getElementById("ellen-player");
 const title = document.getElementById("ellen-title");
+const playerDiv = document.getElementById("ellen-player");
 
-const API_KEY = "AIzaSyDIAfpLJ3GqYpBDUfvCSWaXox8iSw0_R1w";
-
+let ytPlayer;
 let playlist = [];
 let currentIndex = -1;
 let playing = false;
+let progressUpdater;
 
-// ---- Función de búsqueda ----
-function buscar(q){
-    if(!q) return;
-    title.innerText = "Buscando...";
-    fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(q)}&key=${API_KEY}`)
-    .then(res => res.json())
-    .then(data => {
-        if(!data.items || !data.items.length){
-            title.innerText = "No encontrado";
-            return;
+// --- Crear el IFrame Player ---
+function onYouTubeIframeAPIReady(){
+    ytPlayer = new YT.Player('ellen-player', {
+        height: '0', width: '0',
+        playerVars: { autoplay: 0, controls: 0, modestbranding:1 },
+        events: {
+            'onStateChange': onPlayerStateChange
         }
-        const video = data.items[0];
-        playlist.push(video.id.videoId);
-        if(currentIndex === -1) currentIndex = 0;
-        if(playlist.length === 1) reproducirActual();
-    })
-    .catch(err => { console.error(err); title.innerText = "Error buscando la canción"; });
+    });
 }
 
-// ---- Reproducir la canción actual ----
+// --- Reproducir la canción actual ---
 function reproducirActual(){
     if(currentIndex < 0 || currentIndex >= playlist.length) return;
-    const id = playlist[currentIndex];
-    title.innerText = "▶ " + id;
-    player.src = `https://www.youtube.com/embed/${id}?autoplay=1&controls=0&modestbranding=1&loop=1&playlist=${id}`;
+    const id = playlist[currentIndex].id;
+    title.innerText = playlist[currentIndex].titulo;
+    ytPlayer.loadVideoById(id);
     playing = true;
     play.innerText = "⏸";
+    startProgressUpdater();
 }
 
-// ---- Botón play/pause ----
-play.onclick = () => {
-    if(currentIndex < 0) return;
-    if(playing){
-        player.src = "";
+// --- Avanzar a la siguiente canción o loop ---
+function onPlayerStateChange(e){
+    if(e.data === YT.PlayerState.ENDED){
+        if(currentIndex+1 < playlist.length){
+            currentIndex++;
+            reproducirActual();
+        } else {
+            playing = false;
+            play.innerText = "▶";
+            resetProgress();
+        }
+    }
+}
+
+// --- Botón play/pause ---
+play.onclick = ()=>{
+    if(!ytPlayer) return;
+    const estado = ytPlayer.getPlayerState();
+    if(estado === YT.PlayerState.PLAYING){
+        ytPlayer.pauseVideo();
         play.innerText = "▶";
-        playing = false;
+        playing=false;
     } else {
+        if(currentIndex===-1 && playlist.length>0) currentIndex=0;
         reproducirActual();
     }
 };
 
-// ---- Barra de volumen ----
-vol.oninput = e => player.volume = e.target.value; // Nota: no funciona en iframe YouTube, sirve si luego cambias a <audio>
+// --- Barra de volumen ---
+vol.oninput = e=>{
+    if(ytPlayer) ytPlayer.setVolume(e.target.value*100);
+};
 
-// ---- Barra de progreso (simulada) ----
-setInterval(()=>{
-    if(playing){
-        progress.value = (progress.value >= 100) ? 0 : progress.value + 1;
+// --- Barra de progreso ---
+progress.oninput = e=>{
+    if(ytPlayer && ytPlayer.getDuration()){
+        const seekTo = (e.target.value/100)*ytPlayer.getDuration();
+        ytPlayer.seekTo(seekTo, true);
     }
-}, 1000);
+};
 
-// ---- Eventos búsqueda ----
-go.onclick = () => buscar(input.value);
-input.onkeypress = e => { if(e.key === "Enter") buscar(input.value); };
-input.onkeydown = e => e.stopPropagation();
+function startProgressUpdater(){
+    clearInterval(progressUpdater);
+    progressUpdater = setInterval(()=>{
+        if(ytPlayer && ytPlayer.getDuration()){
+            progress.value = (ytPlayer.getCurrentTime()/ytPlayer.getDuration())*100;
+        }
+    }, 500);
+}
 
-// ---- Mostrar/ocultar panel ----
-btn.onclick = () => { ui.style.display = ui.style.display === "none" ? "block" : "none"; };
+function resetProgress(){
+    progress.value = 0;
+    clearInterval(progressUpdater);
+}
 
-// ---- Drag ----
-let drag=false,ox,oy;
+// --- Buscar canción ---
+go.onclick = ()=>buscar(input.value);
+input.onkeypress = e=>{ if(e.key==="Enter") buscar(input.value); };
+
+function buscar(q){
+    if(!q) return;
+    title.innerText = "Buscando...";
+    fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(q)}&key=AIzaSyDIAfpLJ3GqYpBDUfvCSWaXox8iSw0_R1w`)
+    .then(res=>res.json())
+    .then(data=>{
+        if(!data.items || data.items.length===0){
+            title.innerText = "No encontrado";
+            return;
+        }
+        const video = data.items[0];
+        playlist.push({id: video.id.videoId, titulo: video.snippet.title});
+        if(currentIndex===-1) currentIndex=0;
+        if(!playing) reproducirActual();
+    })
+    .catch(err=>{ console.error(err); title.innerText="Error buscando la canción"; });
+}
+
+// --- Mostrar/ocultar panel ---
+btn.onclick = ()=>{ ui.style.display = ui.style.display==="none"?"block":"none"; };
+
+// --- Drag ---
+let drag=false, ox, oy;
 btn.onmousedown=e=>{
     drag=false; ox=e.clientX-wrap.offsetLeft; oy=e.clientY-wrap.offsetTop;
     document.onmousemove=ev=>{
@@ -127,15 +172,6 @@ btn.onmousedown=e=>{
         document.onmousemove=null;
     };
 };
-
-// ---- Escucha Haxball ----
-window.addEventListener("message", e=>{
-    if(e.data.type==="buscar"){
-        input.value = e.data.q;
-        buscar(e.data.q);
-        if(ui.style.display==="none") ui.style.display="block";
-    }
-});
 </script>
 
 </body>
