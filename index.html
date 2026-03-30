@@ -1,55 +1,206 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Ellen Joe VHS Audio</title>
+<title>Ellen Joe Player VHS</title>
 <style>
-body { background:#0a0a0c; color:white; font-family:Segoe UI; padding:20px; }
-.box { border:2px solid #9e213c; border-radius:14px; padding:20px; box-shadow:0 0 25px black; background:#111; }
-h3 { color:#A0C4FF; margin-top:0; }
-input { width:100%; padding:10px; margin-bottom:10px; background:#111; border:1px solid #9e213c; color:white; }
-button { padding:10px; background:#9e213c; border:none; color:white; cursor:pointer; font-size:15px; margin-right:5px; }
-#vhs { width:100%; height:80px; background:#222; border-radius:12px; margin-top:15px; display:flex; align-items:center; justify-content:center; font-size:14px; color:#A0C4FF; box-shadow: inset 0 0 15px #000; }
-iframe { display:none; }
+body {
+    background: #0a0a0c;
+    color: white;
+    font-family: "Segoe UI", sans-serif;
+    padding: 20px;
+}
+#ellen-wrap {
+    position: fixed;
+    top: 150px;
+    right: 20px;
+    width: 300px;
+    z-index: 999999;
+    user-select: none;
+}
+#ellen-btn {
+    width: 60px;
+    height: 60px;
+    background: #9e213c;
+    border-radius: 50%;
+    border: 3px solid #A0C4FF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    font-size: 26px;
+    box-shadow: 0 0 20px rgba(158,33,60,.8);
+}
+#ellen-ui {
+    width: 100%;
+    background: rgba(8,8,12,.97);
+    border: 2px solid #9e213c;
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 8px;
+    color: white;
+    box-shadow: 0 0 25px black;
+    transition: .2s;
+    position: absolute;
+    display: none;
+}
+.row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.row input {
+    flex: 1;
+    background: #111;
+    border: 1px solid #9e213c;
+    color: white;
+    padding: 8px;
+    outline: none;
+}
+.row button {
+    background: #9e213c;
+    border: none;
+    color: white;
+    padding: 0 12px;
+    cursor: pointer;
+}
+#ellen-title {
+    font-size: 12px;
+    color: #A0C4FF;
+    margin-bottom: 10px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+#ellen-play {
+    width: 60px;
+    height: 45px;
+    border-radius: 10px;
+    border: 2px solid #9e213c;
+    background: #111;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+}
+#ellen-vol {
+    width: 100%;
+    margin-top: 10px;
+    accent-color: #9e213c;
+}
 </style>
 </head>
 <body>
-<div class="box">
-<h3>🦈 Ellen Joe VHS Audio</h3>
-<input id="search" placeholder="ej: Numb Linkin Park">
-<div>
-<button onclick="buscar()">Buscar & Reproducir</button>
+
+<div id="ellen-wrap">
+
+<div id="ellen-btn">🦈</div>
+
+<div id="ellen-ui">
+    <div class="row">
+        <input id="ellen-search" placeholder="Buscar canción...">
+        <button id="ellen-go">🔍</button>
+    </div>
+    <div id="ellen-title">Ninguna canción</div>
+    <button id="ellen-play">▶</button>
+    <input type="range" id="ellen-vol" min="0" max="1" step="0.05" value="0.5">
+    <iframe id="ellen-player" width="0" height="0" allow="autoplay" style="border:none;"></iframe>
 </div>
-<div id="vhs">🎵 Reproductor listo</div>
-<iframe id="player" allow="autoplay"></iframe>
+
 </div>
 
 <script>
-async function buscar(){
-    let q = document.getElementById("search").value;
-    let vhs = document.getElementById("vhs");
-    vhs.innerText = "Buscando: " + q;
+const wrap = document.getElementById("ellen-wrap");
+const btn = document.getElementById("ellen-btn");
+const ui = document.getElementById("ellen-ui");
+const input = document.getElementById("ellen-search");
+const go = document.getElementById("ellen-go");
+const play = document.getElementById("ellen-play");
+const vol = document.getElementById("ellen-vol");
+const player = document.getElementById("ellen-player");
+const title = document.getElementById("ellen-title");
 
-    // Buscamos en YouTube
-    try {
-        let res = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`);
-        let text = await res.text();
+let playing = false;
+let currentVideoId = null;
 
-        // Tomamos el primer video
-        let match = text.match(/\/watch\?v=([\w-]{11})/);
-        if(match){
-            let videoId = match[1];
-            // iframe oculto, autoplay audio
-            document.getElementById("player").src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1&rel=0`;
-            vhs.innerText = "🎶 Reproduciendo: " + q;
-        } else {
-            vhs.innerText = "No se encontró la canción.";
+// Pon aquí tu API Key
+const API_KEY = "AIzaSyDIAfpLJ3GqYpBDUfvCSWaXox8iSw0_R1w";
+
+// Buscar en YouTube y reproducir audio
+function buscar(q) {
+    if(!q) return;
+    title.innerText = "Buscando...";
+    fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(q)}&key=${API_KEY}`)
+    .then(res => res.json())
+    .then(data => {
+        if(!data.items || !data.items.length) {
+            title.innerText = "No encontrado";
+            return;
         }
-    } catch(e) {
-        vhs.innerText = "Error buscando la canción.";
-        console.error(e);
-    }
+        const video = data.items[0];
+        currentVideoId = video.id.videoId;
+        title.innerText = video.snippet.title;
+        player.src = `https://www.youtube.com/embed/${currentVideoId}?autoplay=1&controls=0&modestbranding=1&loop=1&playlist=${currentVideoId}`;
+        playing = true;
+        play.innerText = "⏸";
+    })
+    .catch(err => {
+        console.error(err);
+        title.innerText = "Error buscando la canción";
+    });
 }
+
+// Eventos
+go.onclick = () => buscar(input.value);
+input.onkeypress = e => { if(e.key === "Enter") buscar(input.value); };
+input.onkeydown = e => e.stopPropagation();
+
+play.onclick = () => {
+    if(!currentVideoId) return;
+    // Simple toggle de iframe autoplay
+    if(playing){
+        player.src = "";
+        play.innerText = "▶";
+        playing = false;
+    } else {
+        player.src = `https://www.youtube.com/embed/${currentVideoId}?autoplay=1&controls=0&modestbranding=1&loop=1&playlist=${currentVideoId}`;
+        play.innerText = "⏸";
+        playing = true;
+    }
+};
+vol.oninput = e => player.volume = e.target.value; // No aplica al iframe, volumen solo si usas <audio>
+
+// Mostrar/ocultar panel
+btn.onclick = () => { ui.style.display = ui.style.display === "none" ? "block" : "none"; };
+
+// Drag
+let drag = false, ox, oy;
+btn.onmousedown = e => {
+    drag = false;
+    ox = e.clientX - wrap.offsetLeft;
+    oy = e.clientY - wrap.offsetTop;
+    document.onmousemove = ev => {
+        drag = true;
+        wrap.style.left = (ev.clientX - ox) + "px";
+        wrap.style.top = (ev.clientY - oy) + "px";
+        wrap.style.right = "auto";
+    };
+    document.onmouseup = () => {
+        document.onmousemove = null;
+    };
+};
+
+// Ajuste inicial
+ui.style.display = "none";
+
+// Listener desde Haxball
+window.addEventListener("message", e => {
+    if(e.data.type === "buscar") {
+        input.value = e.data.q;
+        buscar(e.data.q);
+        if(ui.style.display === "none") ui.style.display = "block";
+    }
+});
 </script>
+
 </body>
 </html>
