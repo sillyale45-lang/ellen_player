@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ellen Joe VHS Audio</title>
+<style>
+body { background:#0a0a0c; color:white; font-family:Segoe UI; padding:20px; }
+.box { border:2px solid #9e213c; border-radius:14px; padding:20px; box-shadow:0 0 25px black; background:#111; }
+h3 { color:#A0C4FF; margin-top:0; }
+input { width:100%; padding:10px; margin-bottom:10px; background:#111; border:1px solid #9e213c; color:white; }
+button { padding:10px; background:#9e213c; border:none; color:white; cursor:pointer; font-size:15px; margin-right:5px; }
+#vhs { width:100%; height:80px; background:#222; border-radius:12px; margin-top:15px; display:flex; align-items:center; justify-content:center; font-size:14px; color:#A0C4FF; box-shadow: inset 0 0 15px #000; }
+iframe { display:none; }
+</style>
+</head>
+<body>
+<div class="box">
+<h3>🦈 Ellen Joe VHS Audio</h3>
+<input id="search" placeholder="ej: Numb Linkin Park">
+<div>
+<button onclick="buscar()">Buscar & Reproducir</button>
+</div>
+<div id="vhs">🎵 Reproductor listo</div>
+<iframe id="player" allow="autoplay"></iframe>
+</div>
+
+<script>
+async function buscar(){
+    let q = document.getElementById("search").value;
+    let vhs = document.getElementById("vhs");
+    vhs.innerText = "Buscando: " + q;
+
+    // Buscamos en YouTube
+    try {
+        let res = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`);
+        let text = await res.text();
+
+        // Tomamos el primer video
+        let match = text.match(/\/watch\?v=([\w-]{11})/);
+        if(match){
+            let videoId = match[1];
+            // iframe oculto, autoplay audio
+            document.getElementById("player").src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1&rel=0`;
+            vhs.innerText = "🎶 Reproduciendo: " + q;
+        } else {
+            vhs.innerText = "No se encontró la canción.";
+        }
+    } catch(e) {
+        vhs.innerText = "Error buscando la canción.";
+        console.error(e);
+    }
+}
+</script>
+</body>
+</html>
