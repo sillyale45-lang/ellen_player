@@ -4,89 +4,16 @@
 <meta charset="UTF-8">
 <title>Ellen Joe Player VHS</title>
 <style>
-body {
-    background: #0a0a0c;
-    color: white;
-    font-family: "Segoe UI", sans-serif;
-    padding: 20px;
-}
-#ellen-wrap {
-    position: fixed;
-    top: 150px;
-    right: 20px;
-    width: 300px;
-    z-index: 999999;
-    user-select: none;
-}
-#ellen-btn {
-    width: 60px;
-    height: 60px;
-    background: #9e213c;
-    border-radius: 50%;
-    border: 3px solid #A0C4FF;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: grab;
-    font-size: 26px;
-    box-shadow: 0 0 20px rgba(158,33,60,.8);
-}
-#ellen-ui {
-    width: 100%;
-    background: rgba(8,8,12,.97);
-    border: 2px solid #9e213c;
-    border-radius: 12px;
-    padding: 14px;
-    margin-top: 8px;
-    color: white;
-    box-shadow: 0 0 25px black;
-    transition: .2s;
-    position: absolute;
-    display: none;
-}
-.row {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 10px;
-}
-.row input {
-    flex: 1;
-    background: #111;
-    border: 1px solid #9e213c;
-    color: white;
-    padding: 8px;
-    outline: none;
-}
-.row button {
-    background: #9e213c;
-    border: none;
-    color: white;
-    padding: 0 12px;
-    cursor: pointer;
-}
-#ellen-title {
-    font-size: 12px;
-    color: #A0C4FF;
-    margin-bottom: 10px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-#ellen-play {
-    width: 60px;
-    height: 45px;
-    border-radius: 10px;
-    border: 2px solid #9e213c;
-    background: #111;
-    color: white;
-    font-size: 20px;
-    cursor: pointer;
-}
-#ellen-vol {
-    width: 100%;
-    margin-top: 10px;
-    accent-color: #9e213c;
-}
+body { background: #0a0a0c; color: white; font-family: "Segoe UI", sans-serif; padding: 20px; }
+#ellen-wrap { position: fixed; top: 150px; right: 20px; width: 320px; z-index: 999999; user-select: none; }
+#ellen-btn { width: 60px; height: 60px; background: #9e213c; border-radius: 50%; border: 3px solid #A0C4FF; display: flex; align-items: center; justify-content: center; cursor: grab; font-size: 26px; box-shadow: 0 0 20px rgba(158,33,60,.8); }
+#ellen-ui { width: 100%; background: rgba(8,8,12,.97); border: 2px solid #9e213c; border-radius: 12px; padding: 14px; margin-top: 8px; color: white; box-shadow: 0 0 25px black; transition: .2s; position: absolute; display: none; }
+.row { display: flex; gap: 6px; margin-bottom: 10px; }
+.row input { flex: 1; background: #111; border: 1px solid #9e213c; color: white; padding: 8px; outline: none; }
+.row button { background: #9e213c; border: none; color: white; padding: 0 12px; cursor: pointer; }
+#ellen-title { font-size: 12px; color: #A0C4FF; margin-bottom: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#ellen-play { width: 60px; height: 45px; border-radius: 10px; border: 2px solid #9e213c; background: #111; color: white; font-size: 20px; cursor: pointer; }
+#ellen-vol, #ellen-progress { width: 100%; margin-top: 10px; accent-color: #9e213c; }
 </style>
 </head>
 <body>
@@ -102,6 +29,7 @@ body {
     </div>
     <div id="ellen-title">Ninguna canción</div>
     <button id="ellen-play">▶</button>
+    <input type="range" id="ellen-progress" min="0" max="100" value="0">
     <input type="range" id="ellen-vol" min="0" max="1" step="0.05" value="0.5">
     <iframe id="ellen-player" width="0" height="0" allow="autoplay" style="border:none;"></iframe>
 </div>
@@ -116,88 +44,96 @@ const input = document.getElementById("ellen-search");
 const go = document.getElementById("ellen-go");
 const play = document.getElementById("ellen-play");
 const vol = document.getElementById("ellen-vol");
+const progress = document.getElementById("ellen-progress");
 const player = document.getElementById("ellen-player");
 const title = document.getElementById("ellen-title");
 
-let playing = false;
-let currentVideoId = null;
-
-// Pon aquí tu API Key
 const API_KEY = "AIzaSyDIAfpLJ3GqYpBDUfvCSWaXox8iSw0_R1w";
 
-// Buscar en YouTube y reproducir audio
-function buscar(q) {
+let playlist = [];
+let currentIndex = -1;
+let playing = false;
+
+// ---- Función de búsqueda ----
+function buscar(q){
     if(!q) return;
     title.innerText = "Buscando...";
     fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(q)}&key=${API_KEY}`)
     .then(res => res.json())
     .then(data => {
-        if(!data.items || !data.items.length) {
+        if(!data.items || !data.items.length){
             title.innerText = "No encontrado";
             return;
         }
         const video = data.items[0];
-        currentVideoId = video.id.videoId;
-        title.innerText = video.snippet.title;
-        player.src = `https://www.youtube.com/embed/${currentVideoId}?autoplay=1&controls=0&modestbranding=1&loop=1&playlist=${currentVideoId}`;
-        playing = true;
-        play.innerText = "⏸";
+        playlist.push(video.id.videoId);
+        if(currentIndex === -1) currentIndex = 0;
+        if(playlist.length === 1) reproducirActual();
     })
-    .catch(err => {
-        console.error(err);
-        title.innerText = "Error buscando la canción";
-    });
+    .catch(err => { console.error(err); title.innerText = "Error buscando la canción"; });
 }
 
-// Eventos
-go.onclick = () => buscar(input.value);
-input.onkeypress = e => { if(e.key === "Enter") buscar(input.value); };
-input.onkeydown = e => e.stopPropagation();
+// ---- Reproducir la canción actual ----
+function reproducirActual(){
+    if(currentIndex < 0 || currentIndex >= playlist.length) return;
+    const id = playlist[currentIndex];
+    title.innerText = "▶ " + id;
+    player.src = `https://www.youtube.com/embed/${id}?autoplay=1&controls=0&modestbranding=1&loop=1&playlist=${id}`;
+    playing = true;
+    play.innerText = "⏸";
+}
 
+// ---- Botón play/pause ----
 play.onclick = () => {
-    if(!currentVideoId) return;
-    // Simple toggle de iframe autoplay
+    if(currentIndex < 0) return;
     if(playing){
         player.src = "";
         play.innerText = "▶";
         playing = false;
     } else {
-        player.src = `https://www.youtube.com/embed/${currentVideoId}?autoplay=1&controls=0&modestbranding=1&loop=1&playlist=${currentVideoId}`;
-        play.innerText = "⏸";
-        playing = true;
+        reproducirActual();
     }
 };
-vol.oninput = e => player.volume = e.target.value; // No aplica al iframe, volumen solo si usas <audio>
 
-// Mostrar/ocultar panel
+// ---- Barra de volumen ----
+vol.oninput = e => player.volume = e.target.value; // Nota: no funciona en iframe YouTube, sirve si luego cambias a <audio>
+
+// ---- Barra de progreso (simulada) ----
+setInterval(()=>{
+    if(playing){
+        progress.value = (progress.value >= 100) ? 0 : progress.value + 1;
+    }
+}, 1000);
+
+// ---- Eventos búsqueda ----
+go.onclick = () => buscar(input.value);
+input.onkeypress = e => { if(e.key === "Enter") buscar(input.value); };
+input.onkeydown = e => e.stopPropagation();
+
+// ---- Mostrar/ocultar panel ----
 btn.onclick = () => { ui.style.display = ui.style.display === "none" ? "block" : "none"; };
 
-// Drag
-let drag = false, ox, oy;
-btn.onmousedown = e => {
-    drag = false;
-    ox = e.clientX - wrap.offsetLeft;
-    oy = e.clientY - wrap.offsetTop;
-    document.onmousemove = ev => {
-        drag = true;
-        wrap.style.left = (ev.clientX - ox) + "px";
-        wrap.style.top = (ev.clientY - oy) + "px";
-        wrap.style.right = "auto";
+// ---- Drag ----
+let drag=false,ox,oy;
+btn.onmousedown=e=>{
+    drag=false; ox=e.clientX-wrap.offsetLeft; oy=e.clientY-wrap.offsetTop;
+    document.onmousemove=ev=>{
+        drag=true;
+        wrap.style.left=(ev.clientX-ox)+"px";
+        wrap.style.top=(ev.clientY-oy)+"px";
+        wrap.style.right="auto";
     };
-    document.onmouseup = () => {
-        document.onmousemove = null;
+    document.onmouseup=()=>{
+        document.onmousemove=null;
     };
 };
 
-// Ajuste inicial
-ui.style.display = "none";
-
-// Listener desde Haxball
-window.addEventListener("message", e => {
-    if(e.data.type === "buscar") {
+// ---- Escucha Haxball ----
+window.addEventListener("message", e=>{
+    if(e.data.type==="buscar"){
         input.value = e.data.q;
         buscar(e.data.q);
-        if(ui.style.display === "none") ui.style.display = "block";
+        if(ui.style.display==="none") ui.style.display="block";
     }
 });
 </script>
