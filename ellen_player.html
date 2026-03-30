@@ -1,55 +1,56 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Ellen Joe VHS Audio</title>
+<title>Ellen Joe YouTube Player</title>
 <style>
 body { background:#0a0a0c; color:white; font-family:Segoe UI; padding:20px; }
-.box { border:2px solid #9e213c; border-radius:14px; padding:20px; box-shadow:0 0 25px black; background:#111; }
-h3 { color:#A0C4FF; margin-top:0; }
-input { width:100%; padding:10px; margin-bottom:10px; background:#111; border:1px solid #9e213c; color:white; }
-button { padding:10px; background:#9e213c; border:none; color:white; cursor:pointer; font-size:15px; margin-right:5px; }
-#vhs { width:100%; height:80px; background:#222; border-radius:12px; margin-top:15px; display:flex; align-items:center; justify-content:center; font-size:14px; color:#A0C4FF; box-shadow: inset 0 0 15px #000; }
-iframe { display:none; }
+#ellen-ui { width:260px; background:#08080c; border:2px solid #9e213c; border-radius:12px; padding:14px; }
+input { width:100%; padding:8px; background:#111; border:1px solid #9e213c; color:white; }
+button { background:#9e213c; border:none; color:white; padding:8px; width:100%; cursor:pointer; }
+#title { font-size:12px; color:#A0C4FF; margin:10px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 </style>
 </head>
 <body>
-<div class="box">
-<h3>🦈 Ellen Joe VHS Audio</h3>
-<input id="search" placeholder="ej: Numb Linkin Park">
-<div>
-<button onclick="buscar()">Buscar & Reproducir</button>
-</div>
-<div id="vhs">🎵 Reproductor listo</div>
-<iframe id="player" allow="autoplay"></iframe>
+
+<div id="ellen-ui">
+<input id="search" placeholder="Buscar canción...">
+<button id="go">🔍 Buscar</button>
+<div id="title">Título</div>
+<iframe id="player" width="0" height="0" allow="autoplay" src=""></iframe>
 </div>
 
 <script>
-async function buscar(){
-    let q = document.getElementById("search").value;
-    let vhs = document.getElementById("vhs");
-    vhs.innerText = "Buscando: " + q;
+const input = document.getElementById("search");
+const go = document.getElementById("go");
+const player = document.getElementById("player");
+const title = document.getElementById("title");
 
-    // Buscamos en YouTube
-    try {
-        let res = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`);
-        let text = await res.text();
-
-        // Tomamos el primer video
-        let match = text.match(/\/watch\?v=([\w-]{11})/);
-        if(match){
-            let videoId = match[1];
-            // iframe oculto, autoplay audio
-            document.getElementById("player").src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1&rel=0`;
-            vhs.innerText = "🎶 Reproduciendo: " + q;
-        } else {
-            vhs.innerText = "No se encontró la canción.";
-        }
-    } catch(e) {
-        vhs.innerText = "Error buscando la canción.";
-        console.error(e);
-    }
+// Función para reproducir un videoId de YouTube solo audio
+function reproducir(videoId, nombre){
+    title.innerText = nombre;
+    player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1`;
 }
+
+// Función para "buscar" (demo con videoId fijo)
+function buscar(q){
+    title.innerText = "Buscando...";
+    // Demo: hardcodeamos un videoId para que suene
+    let videoId = "kXYiU_JCYtU"; // Numb - Linkin Park
+    reproducir(videoId, q);
+}
+
+go.onclick = () => buscar(input.value);
+input.onkeypress = e => { if(e.key==="Enter") buscar(input.value); };
+
+// Recibir búsqueda desde Haxball
+window.addEventListener("message", e=>{
+    if(e.data.type==="buscar" && e.data.q){
+        input.value = e.data.q;
+        buscar(e.data.q);
+    }
+});
 </script>
+
 </body>
 </html>
