@@ -2,27 +2,27 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>NOM NOM SHARK PLAYER - Pestaña Lateral</title>
-
+<title>NOM NOM SHARK PLAYER - Compacto y funcional</title>
 <style>
-/* Panel lateral derecho */
+/* Panel lateral derecho compacto */
 #ellen-panel {
   position: fixed;
   top: 50px;
-  right: -360px;        /* inicia cerrado */
-  width: 350px;
-  height: 500px;
+  right: -320px;
+  width: 300px;
+  height: 400px;
   z-index: 999999;
   background: rgba(8,8,12,0.95);
   border-left: 3px solid #9e213c;
   border-radius: 10px 0 0 10px;
-  box-shadow: -2px 0 15px rgba(0,0,0,0.5);
+  box-shadow: -2px 0 10px rgba(0,0,0,0.5);
   transition: right 0.35s ease;
   pointer-events: auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 10px;
+  padding: 8px;
+  font-size: 13px;
 }
 
 /* Pestaña lateral */
@@ -30,39 +30,42 @@
   position: fixed;
   top: 50px;
   right: 0px;
-  width: 50px;
-  height: 100px;
+  width: 40px;
+  height: 80px;
   background: #9e213c;
   color: white;
-  font-size: 26px;
+  font-size: 22px;
   border-radius: 10px 0 0 10px;
-  border: 3px solid #A0C4FF;
+  border: 2px solid #A0C4FF;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 1000000;
-  box-shadow: 0 0 15px rgba(0,0,0,0.6);
+  box-shadow: 0 0 10px rgba(0,0,0,0.6);
   writing-mode: vertical-rl;
   text-orientation: mixed;
 }
 
 /* buscador */
-.row { display:flex; gap:6px; margin-bottom:10px; }
-.row input { flex:1; background:#111; border:1px solid #9e213c; color:white; padding:8px; outline:none; border-radius:6px; }
-.row button { background:#9e213c; border:none; color:white; padding:0 12px; cursor:pointer; border-radius:6px; }
+.row { display:flex; gap:4px; margin-bottom:8px; }
+.row input { flex:1; background:#111; border:1px solid #9e213c; color:white; padding:5px; outline:none; border-radius:4px; font-size:13px; }
+.row button { background:#9e213c; border:none; color:white; padding:0 8px; cursor:pointer; border-radius:4px; font-size:13px; }
 
 /* títulos y playlist */
-#ellen-title{ font-size:12px; color:#A0C4FF; margin-bottom:6px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-#playlist{ margin-top:10px; font-size:11px; border-top:1px solid #9e213c; padding-top:6px; }
-.track{ padding:4px 0; cursor:pointer; }
-.track:hover{color:#A0C4FF;}
-.track.active{color:#ffdf00;}
+#ellen-title{ font-size:11px; color:#A0C4FF; margin-bottom:4px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+#playlist{ margin-top:6px; font-size:11px; border-top:1px solid #9e213c; padding-top:4px; overflow-y:auto; max-height:120px; color:white; }
+
+/* track con botón eliminar */
+.track { padding:3px 0; cursor:pointer; display:flex; justify-content:space-between; color:white; }
+.track:hover { color:#A0C4FF; }
+.track.active { color:#ffdf00; }
+.track .del { color:#ff4b4b; cursor:pointer; font-weight:bold; margin-left:5px; }
 
 /* play y controles */
-#ellen-play{ width:60px; height:45px; border-radius:10px; border:2px solid #9e213c; background:#111; color:white; font-size:20px; cursor:pointer; margin-bottom:6px; }
-#ellen-progress{ width:100%; height:6px; accent-color:#A0C4FF; background:#222; border-radius:4px; margin-bottom:6px; }
-#ellen-vol{ width:100%; accent-color:#9e213c; margin-top:6px; }
+#ellen-play{ width:50px; height:35px; border-radius:8px; border:2px solid #9e213c; background:#111; color:white; font-size:16px; cursor:pointer; margin-bottom:4px; }
+#ellen-progress{ width:100%; height:5px; accent-color:#A0C4FF; background:#222; border-radius:3px; margin-bottom:4px; }
+#ellen-vol{ width:100%; accent-color:#9e213c; margin-top:4px; }
 
 /* YouTube player oculto */
 #ellen-player { width:0; height:0; }
@@ -73,7 +76,7 @@
 <!-- pestaña lateral -->
 <div id="ellen-tab">🦈</div>
 
-<!-- panel lateral -->
+<!-- panel lateral compacto -->
 <div id="ellen-panel">
 
   <div class="row">
@@ -96,10 +99,13 @@
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
-// abrir/cerrar panel
 const panel=document.getElementById("ellen-panel");
 const tab=document.getElementById("ellen-tab");
-tab.onclick=()=>{ panel.style.right = (panel.style.right==="0px") ? "-360px" : "0px"; };
+
+// Abrir/cerrar panel
+tab.onclick = ()=> {
+  panel.style.right = (panel.style.right==="0px") ? "-320px" : "0px";
+};
 
 // draggable vertical
 let dragging=false, offsetY=0;
@@ -115,8 +121,119 @@ document.addEventListener("mousemove", e=>{
 });
 document.addEventListener("mouseup", ()=>dragging=false);
 
-// Aquí va TODO tu JS de búsqueda, playlist y reproducción
-// (el que ya tienes funcionando en tu HTML original)
+// Reproductor YouTube
+let ytPlayer, playlist=[], currentIndex=-1, playing=false, progressUpdater;
+
+function onYouTubeIframeAPIReady(){
+  ytPlayer=new YT.Player("ellen-player",{
+    height:"0", width:"0",
+    playerVars:{autoplay:1,controls:0,modestbranding:1},
+    events:{onStateChange:onPlayerStateChange}
+  });
+}
+
+// Render playlist
+function renderPlaylist(){
+  const playlistDiv=document.getElementById("playlist");
+  playlistDiv.innerHTML="";
+  playlist.forEach((t,i)=>{
+    const div=document.createElement("div");
+    div.className="track"+(i===currentIndex?" active":"");
+    div.innerHTML=`<span class="title">${t.titulo}</span><span class="del">×</span>`;
+    // reproducir al click
+    div.querySelector(".title").onclick=()=>{ currentIndex=i; reproducirActual(); };
+    // eliminar canción
+    div.querySelector(".del").onclick=(e)=>{ e.stopPropagation(); playlist.splice(i,1); if(currentIndex>=playlist.length) currentIndex=playlist.length-1; renderPlaylist(); };
+    playlistDiv.appendChild(div);
+  });
+}
+
+// Reproducir actual
+function reproducirActual(){
+  if(currentIndex<0 || currentIndex>=playlist.length) return;
+  const vid=playlist[currentIndex];
+  document.getElementById("ellen-title").innerText=vid.titulo;
+
+  // Solo carga si es video diferente
+  if(ytPlayer.getVideoData().video_id !== vid.id){
+    ytPlayer.loadVideoById(vid.id);
+  }
+  ytPlayer.playVideo();
+  playing=true;
+  document.getElementById("ellen-play").innerText="⏸";
+  renderPlaylist();
+  startProgressUpdater();
+}
+
+// Estado de YouTube
+function onPlayerStateChange(e){
+  if(e.data===YT.PlayerState.ENDED){
+    // eliminar canción que terminó
+    if(currentIndex>=0) playlist.splice(currentIndex,1);
+    currentIndex=0;
+    renderPlaylist();
+    reproducirActual();
+  }
+}
+
+// Play/Pause
+document.getElementById("ellen-play").onclick=()=>{
+  if(!ytPlayer) return;
+  const estado=ytPlayer.getPlayerState();
+  if(estado===YT.PlayerState.PLAYING){
+    ytPlayer.pauseVideo();
+    playing=false;
+    document.getElementById("ellen-play").innerText="▶";
+  }else{
+    reproducirActual();
+  }
+};
+
+// Volumen
+document.getElementById("ellen-vol").oninput=e=>{
+  if(ytPlayer) ytPlayer.setVolume(e.target.value*100);
+};
+
+// Barra de progreso
+document.getElementById("ellen-progress").oninput=e=>{
+  if(ytPlayer && ytPlayer.getDuration()){
+    const t=(e.target.value/100)*ytPlayer.getDuration();
+    ytPlayer.seekTo(t,true);
+  }
+};
+
+function startProgressUpdater(){
+  clearInterval(progressUpdater);
+  progressUpdater=setInterval(()=>{
+    if(ytPlayer && ytPlayer.getDuration()){
+      document.getElementById("ellen-progress").value=
+      (ytPlayer.getCurrentTime()/ytPlayer.getDuration())*100;
+    }
+  },500);
+}
+
+// Buscar canción
+document.getElementById("ellen-go").onclick=()=>buscar(document.getElementById("ellen-search").value);
+document.getElementById("ellen-search").addEventListener("keypress", e=>{
+  if(e.key==="Enter") buscar(document.getElementById("ellen-search").value);
+});
+
+function buscar(q){
+  if(!q) return;
+  document.getElementById("ellen-title").innerText="Buscando...";
+  fetch("https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q="+encodeURIComponent(q)+"&key=AIzaSyDIAfpLJ3GqYpBDUfvCSWaXox8iSw0_R1w")
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data.items?.length){
+        document.getElementById("ellen-title").innerText="No encontrado";
+        return;
+      }
+      const v=data.items[0];
+      playlist.push({id:v.id.videoId,titulo:v.snippet.title});
+      currentIndex=playlist.length-1;
+      reproducirActual();
+    });
+}
 </script>
 </body>
 </html>
