@@ -1,40 +1,76 @@
-<div id="ellen-panel">
-  <iframe src="https://sillyale45-lang.github.io/ellen_player/" frameborder="0" allow="autoplay"></iframe>
-</div>
-<button id="ellen-toggle">🦈</button>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>NOM NOM SHARK PLAYER - Panel Lateral</title>
 
 <style>
+/* panel lateral */
 #ellen-panel {
   position: fixed;
   top: 0;
-  right: -350px; /* fuera de la pantalla */
+  right: -350px; /* inicia fuera de la pantalla */
   width: 350px;
   height: 100vh;
   z-index: 999999;
   transition: right 0.3s ease;
-  pointer-events: auto; /* solo el panel captura eventos */
+  pointer-events: auto; /* solo el panel captura clicks */
+  background: rgba(0,0,0,0.8);
+  box-shadow: -2px 0 15px rgba(0,0,0,0.5);
+  border-left: 3px solid #9e213c;
+  border-radius: 0 0 0 10px;
 }
 
+/* iframe */
 #ellen-panel iframe {
   width: 100%;
   height: 100%;
   border: none;
+  background: transparent;
 }
 
+/* botón toggle */
 #ellen-toggle {
   position: fixed;
   top: 50px;
   right: 10px;
   z-index: 1000000;
   cursor: pointer;
-  font-size: 24px;
+  font-size: 28px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 3px solid #A0C4FF;
+  background: #9e213c;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(0,0,0,0.6);
+  transition: transform 0.2s;
+}
+
+#ellen-toggle:hover {
+  transform: scale(1.1);
 }
 </style>
+</head>
+<body>
+
+<!-- panel lateral -->
+<div id="ellen-panel">
+  <iframe src="https://sillyale45-lang.github.io/ellen_player/" allow="autoplay"></iframe>
+</div>
+
+<!-- botón toggle -->
+<div id="ellen-toggle">🦈</div>
 
 <script>
+// referencias
 const panel = document.getElementById("ellen-panel");
 const toggle = document.getElementById("ellen-toggle");
 
+// abrir/cerrar panel
 toggle.onclick = () => {
   if(panel.style.right === "0px"){
     panel.style.right = "-350px"; // cerrar
@@ -43,3 +79,6 @@ toggle.onclick = () => {
   }
 };
 </script>
+
+</body>
+</html>
