@@ -1,328 +1,45 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>NOM NOM SHARK PLAYER - Flotante</title>
+<div id="ellen-panel">
+  <iframe src="https://sillyale45-lang.github.io/ellen_player/" frameborder="0" allow="autoplay"></iframe>
+</div>
+<button id="ellen-toggle">🦈</button>
 
 <style>
-/* transparencia total */
-html, body {
-  background: transparent !important;
-  margin: 0;
-  height: 100%;
-  overflow: visible;
+#ellen-panel {
+  position: fixed;
+  top: 0;
+  right: -350px; /* fuera de la pantalla */
+  width: 350px;
+  height: 100vh;
+  z-index: 999999;
+  transition: right 0.3s ease;
+  pointer-events: auto; /* solo el panel captura eventos */
 }
 
-/* contenedor flotante */
-#ellen-wrap {
+#ellen-panel iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+#ellen-toggle {
   position: fixed;
   top: 50px;
-  left: 50px;
-  min-width: 60px;     /* tamaño mínimo de la burbuja */
-  max-width: 90vw;     /* máximo ancho hasta casi toda la ventana */
-  pointer-events: auto; /* solo la burbuja captura eventos */
-  z-index: 999999;
-  user-select: none;
-}
-
-/* burbuja */
-#ellen-btn {
-  width: 60px;
-  height: 60px;
-  background: #9e213c;
-  border-radius: 50%;
-  border: 3px solid #A0C4FF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: grab;
-  font-size: 26px;
-  box-shadow: 0 0 20px rgba(158,33,60,.8);
-  transition: .25s;
-}
-
-/* animacion hover */
-#ellen-btn:hover {
-  transform: scale(1.07);
-}
-
-/* panel */
-#ellen-ui {
-  width: 100%;
-  background: rgba(8,8,12,.92);
-  backdrop-filter: blur(12px);
-  border: 2px solid #9e213c;
-  border-radius: 14px;
-  padding: 14px;
-  margin-top: 8px;
-  box-shadow: 0 0 25px rgba(0,0,0,.6);
-  display: none;
-  max-height: 80vh;
-  overflow-y: auto;
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: .25s;
-}
-
-/* animacion visible */
-#ellen-ui.show {
-  display: block;
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* buscador */
-.row {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.row input {
-  flex: 1;
-  background: #111;
-  border: 1px solid #9e213c;
-  color: white;
-  padding: 8px;
-  outline: none;
-  border-radius: 6px;
-}
-
-.row button {
-  background: #9e213c;
-  border: none;
-  color: white;
-  padding: 0 12px;
+  right: 10px;
+  z-index: 1000000;
   cursor: pointer;
-  border-radius: 6px;
-}
-
-/* titulo */
-#ellen-title {
-  font-size: 12px;
-  color: #A0C4FF;
-  margin-bottom: 6px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-/* play */
-#ellen-play {
-  width: 60px;
-  height: 45px;
-  border-radius: 10px;
-  border: 2px solid #9e213c;
-  background: #111;
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-  margin-bottom: 6px;
-}
-
-/* barras */
-#ellen-progress {
-  width: 100%;
-  height: 6px;
-  accent-color: #A0C4FF;
-  background: #222;
-  border-radius: 4px;
-  margin-bottom: 6px;
-}
-
-#ellen-vol {
-  width: 100%;
-  accent-color: #9e213c;
-  margin-top: 6px;
-}
-
-/* playlist */
-#playlist {
-  margin-top: 10px;
-  font-size: 11px;
-  border-top: 1px solid #9e213c;
-  padding-top: 6px;
-}
-
-.track {
-  padding: 4px 0;
-  cursor: pointer;
-}
-
-.track:hover {
-  color: #A0C4FF;
-}
-
-.track.active {
-  color: #ffdf00;
-}
-
-/* iframe del reproductor (oculto visualmente) */
-#ellen-player {
-  width: 100%;
-  height: 0; /* seguimos usando 0 porque solo es audio */
+  font-size: 24px;
 }
 </style>
 
-</head>
-<body>
-
-<div id="ellen-wrap">
-  <div id="ellen-btn">🦈</div>
-
-  <div id="ellen-ui">
-    <div class="row">
-      <input id="ellen-search" placeholder="Buscar canción...">
-      <button id="ellen-go">🔍</button>
-    </div>
-
-    <div id="ellen-title">Ninguna canción</div>
-
-    <button id="ellen-play">▶</button>
-
-    <input type="range" id="ellen-progress" min="0" max="100" value="0">
-    <input type="range" id="ellen-vol" min="0" max="1" step="0.05" value="0.5">
-
-    <div id="playlist"></div>
-    <div id="ellen-player"></div>
-  </div>
-</div>
-
-<script src="https://www.youtube.com/iframe_api"></script>
-
 <script>
-const wrap = document.getElementById("ellen-wrap");
-const btn = document.getElementById("ellen-btn");
-const ui = document.getElementById("ellen-ui");
-const input = document.getElementById("ellen-search");
-const go = document.getElementById("ellen-go");
-const play = document.getElementById("ellen-play");
-const vol = document.getElementById("ellen-vol");
-const progress = document.getElementById("ellen-progress");
-const title = document.getElementById("ellen-title");
-const playlistDiv = document.getElementById("playlist");
+const panel = document.getElementById("ellen-panel");
+const toggle = document.getElementById("ellen-toggle");
 
-let ytPlayer;
-let playlist = [];
-let currentIndex = -1;
-let playing = false;
-let progressUpdater;
-
-function onYouTubeIframeAPIReady() {
-  ytPlayer = new YT.Player("ellen-player", {
-    height: "0",
-    width: "0",
-    playerVars: { autoplay: 1, controls: 0, modestbranding: 1 },
-    events: { onStateChange: onPlayerStateChange }
-  });
-}
-
-function renderPlaylist() {
-  playlistDiv.innerHTML = "";
-  playlist.forEach((t,i)=>{
-    const div = document.createElement("div");
-    div.className = "track" + (i===currentIndex ? " active" : "");
-    div.innerText = t.titulo;
-    div.onclick = () => { currentIndex=i; reproducirActual(); };
-    playlistDiv.appendChild(div);
-  });
-}
-
-function reproducirActual() {
-  if(currentIndex<0) return;
-  const vid = playlist[currentIndex];
-  title.innerText = vid.titulo;
-  ytPlayer.loadVideoById(vid.id);
-  playing=true;
-  play.innerText="⏸";
-  renderPlaylist();
-  startProgressUpdater();
-}
-
-function onPlayerStateChange(e) {
-  if(e.data===YT.PlayerState.ENDED){
-    playing=false;
-    play.innerText="▶";
-    resetProgress();
-  }
-}
-
-play.onclick = () => {
-  if(!ytPlayer) return;
-  const estado = ytPlayer.getPlayerState();
-  if(estado===YT.PlayerState.PLAYING){
-    ytPlayer.pauseVideo();
-    playing=false;
-    play.innerText="▶";
+toggle.onclick = () => {
+  if(panel.style.right === "0px"){
+    panel.style.right = "-350px"; // cerrar
   } else {
-    if(currentIndex===-1 && playlist.length) currentIndex=0;
-    reproducirActual();
+    panel.style.right = "0px";    // abrir
   }
-};
-
-vol.oninput = e => { if(ytPlayer) ytPlayer.setVolume(e.target.value*100); };
-progress.oninput = e => {
-  if(ytPlayer && ytPlayer.getDuration()){
-    const t = (e.target.value/100)*ytPlayer.getDuration();
-    ytPlayer.seekTo(t,true);
-  }
-};
-
-function startProgressUpdater(){
-  clearInterval(progressUpdater);
-  progressUpdater = setInterval(()=>{
-    if(ytPlayer && ytPlayer.getDuration()){
-      progress.value = (ytPlayer.getCurrentTime()/ytPlayer.getDuration())*100;
-    }
-  },500);
-}
-
-function resetProgress(){ progress.value=0; clearInterval(progressUpdater); }
-
-go.onclick = () => buscar(input.value);
-input.onkeypress = e => { if(e.key==="Enter") buscar(input.value); };
-
-function buscar(q){
-  if(!q) return;
-  title.innerText="Buscando...";
-  fetch(
-    "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=" +
-    encodeURIComponent(q) +
-    "&key=AIzaSyDIAfpLJ3GqYpBDUfvCSWaXox8iSw0_R1w"
-  ).then(r=>r.json())
-   .then(data=>{
-     if(!data.items?.length){ title.innerText="No encontrado"; return; }
-     const v = data.items[0];
-     playlist.push({ id:v.id.videoId, titulo:v.snippet.title });
-     currentIndex = playlist.length-1;
-     reproducirActual();
-   });
-}
-
-// abrir/cerrar panel animado
-btn.onclick = () => {
-  if(ui.classList.contains("show")){
-    ui.classList.remove("show");
-    setTimeout(()=>ui.style.display="none",200);
-  } else {
-    ui.style.display="block";
-    setTimeout(()=>ui.classList.add("show"),10);
-  }
-};
-
-// mover libremente
-let drag=false, ox, oy;
-btn.onmousedown = e => {
-  ox = e.clientX - wrap.offsetLeft;
-  oy = e.clientY - wrap.offsetTop;
-  document.onmousemove = ev => {
-    wrap.style.left = (ev.clientX - ox) + "px";
-    wrap.style.top = (ev.clientY - oy) + "px";
-    wrap.style.right = "auto";
-  };
-  document.onmouseup = () => { document.onmousemove = null; };
 };
 </script>
-
-</body>
-</html>
