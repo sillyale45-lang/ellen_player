@@ -184,6 +184,30 @@ btn.onmousedown=e=>{
     };
     document.onmouseup=()=>{ document.onmousemove=null; };
 };
+
+    window.addEventListener("message", async (e)=>{
+
+ if(!e.data?.buscar) return;
+
+ const res = await fetch(
+  "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q="
+  + encodeURIComponent(e.data.buscar)
+  + "&key=AIzaSyDIAfpLJ3GqYpBDUfvCSWaXox8iSw0_R1w"
+ );
+
+ const data = await res.json();
+
+ if(!data.items?.length) return;
+
+ e.source.postMessage({
+
+  id: data.items[0].id.videoId,
+  titulo: data.items[0].snippet.title
+
+ },"*");
+
+});
 </script>
 </body>
 </html>
+
