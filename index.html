@@ -1,26 +1,147 @@
-<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Ellen Joe Player VHS</title>
+<title>Ellen Joe Player</title>
+
 <style>
-body { background: #0a0a0c; color: white; font-family: "Segoe UI", sans-serif; padding: 20px; }
-#ellen-wrap { position: fixed; top: 150px; right: 20px; width: 320px; z-index: 999999; user-select: none; }
-#ellen-btn { width: 60px; height: 60px; background: #9e213c; border-radius: 50%; border: 3px solid #A0C4FF; display: flex; align-items: center; justify-content: center; cursor: grab; font-size: 26px; box-shadow: 0 0 20px rgba(158,33,60,.8); }
-#ellen-ui { width: 100%; background: rgba(8,8,12,.97); border: 2px solid #9e213c; border-radius: 12px; padding: 14px; margin-top: 8px; color: white; box-shadow: 0 0 25px black; transition: .2s; position: absolute; display: none; max-height: 500px; overflow-y: auto; }
-.row { display: flex; gap: 6px; margin-bottom: 10px; }
-.row input { flex: 1; background: #111; border: 1px solid #9e213c; color: white; padding: 8px; outline: none; }
-.row button { background: #9e213c; border: none; color: white; padding: 0 12px; cursor: pointer; }
-#ellen-title { font-size: 12px; color: #A0C4FF; margin-bottom: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-#ellen-play { width: 60px; height: 45px; border-radius: 10px; border: 2px solid #9e213c; background: #111; color: white; font-size: 20px; cursor: pointer; margin-bottom: 6px; }
-#ellen-progress { width: 100%; height: 6px; accent-color: #A0C4FF; background: #222; border-radius: 4px; margin-bottom:6px; }
-#ellen-vol { width: 100%; accent-color: #9e213c; margin-top: 6px; }
-#playlist { margin-top: 10px; font-size: 11px; border-top:1px solid #9e213c; padding-top:6px; }
-.track { padding:4px 0; cursor:pointer; }
-.track:hover { color:#A0C4FF; }
-.track.active { color:#ffdf00; }
+
+/* transparencia real */
+html,body{
+background:transparent !important;
+margin:0;
+height:100%;
+overflow:visible;
+pointer-events:none;
+}
+
+/* permite usar el reproductor */
+#ellen-wrap{
+pointer-events:auto;
+position:fixed;
+top:150px;
+right:40px;
+}
+
+/* burbuja tiburon */
+#ellen-btn{
+width:60px;
+height:60px;
+background:#9e213c;
+border-radius:50%;
+border:3px solid #A0C4FF;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:grab;
+font-size:26px;
+box-shadow:0 0 20px rgba(158,33,60,.8);
+}
+
+/* panel */
+#ellen-ui{
+width:100%;
+background:rgba(8,8,12,.92);
+backdrop-filter:blur(10px);
+border:2px solid #9e213c;
+border-radius:12px;
+padding:14px;
+margin-top:8px;
+box-shadow:0 0 25px rgba(0,0,0,.6);
+display:none;
+max-height:500px;
+overflow-y:auto;
+}
+
+/* fila */
+.row{
+display:flex;
+gap:6px;
+margin-bottom:10px;
+}
+
+.row input{
+flex:1;
+background:#111;
+border:1px solid #9e213c;
+color:white;
+padding:8px;
+outline:none;
+border-radius:6px;
+}
+
+.row button{
+background:#9e213c;
+border:none;
+color:white;
+padding:0 12px;
+cursor:pointer;
+border-radius:6px;
+}
+
+/* titulo */
+#ellen-title{
+font-size:12px;
+color:#A0C4FF;
+margin-bottom:6px;
+overflow:hidden;
+white-space:nowrap;
+text-overflow:ellipsis;
+}
+
+/* boton play */
+#ellen-play{
+width:60px;
+height:45px;
+border-radius:10px;
+border:2px solid #9e213c;
+background:#111;
+color:white;
+font-size:20px;
+cursor:pointer;
+margin-bottom:6px;
+}
+
+/* barras */
+#ellen-progress{
+width:100%;
+height:6px;
+accent-color:#A0C4FF;
+background:#222;
+border-radius:4px;
+margin-bottom:6px;
+}
+
+#ellen-vol{
+width:100%;
+accent-color:#9e213c;
+margin-top:6px;
+}
+
+/* playlist */
+#playlist{
+margin-top:10px;
+font-size:11px;
+border-top:1px solid #9e213c;
+padding-top:6px;
+}
+
+.track{
+padding:4px 0;
+cursor:pointer;
+}
+
+.track:hover{
+color:#A0C4FF;
+}
+
+.track.active{
+color:#ffdf00;
+}
+
 </style>
+
 </head>
+
 <body>
 
 <div id="ellen-wrap">
@@ -28,162 +149,331 @@ body { background: #0a0a0c; color: white; font-family: "Segoe UI", sans-serif; p
 <div id="ellen-btn">🦈</div>
 
 <div id="ellen-ui">
-    <div class="row">
-        <input id="ellen-search" placeholder="Buscar canción...">
-        <button id="ellen-go">🔍</button>
-    </div>
-    <div id="ellen-title">Ninguna canción</div>
-    <button id="ellen-play">▶</button>
-    <input type="range" id="ellen-progress" min="0" max="100" value="0">
-    <input type="range" id="ellen-vol" min="0" max="1" step="0.05" value="0.5">
-    <div id="playlist"></div>
-    <div id="ellen-player"></div>
+
+<div class="row">
+<input id="ellen-search" placeholder="Buscar canción...">
+<button id="ellen-go">🔍</button>
+</div>
+
+<div id="ellen-title">Ninguna canción</div>
+
+<button id="ellen-play">▶</button>
+
+<input type="range" id="ellen-progress" min="0" max="100" value="0">
+
+<input type="range" id="ellen-vol" min="0" max="1" step="0.05" value="0.5">
+
+<div id="playlist"></div>
+
+<div id="ellen-player"></div>
+
 </div>
 
 </div>
+
 
 <script src="https://www.youtube.com/iframe_api"></script>
+
 <script>
-const wrap = document.getElementById("ellen-wrap");
-const btn = document.getElementById("ellen-btn");
-const ui = document.getElementById("ellen-ui");
-const input = document.getElementById("ellen-search");
-const go = document.getElementById("ellen-go");
-const play = document.getElementById("ellen-play");
-const vol = document.getElementById("ellen-vol");
-const progress = document.getElementById("ellen-progress");
-const title = document.getElementById("ellen-title");
-const playerDiv = document.getElementById("ellen-player");
-const playlistDiv = document.getElementById("playlist");
+
+const wrap=document.getElementById("ellen-wrap");
+const btn=document.getElementById("ellen-btn");
+const ui=document.getElementById("ellen-ui");
+
+const input=document.getElementById("ellen-search");
+const go=document.getElementById("ellen-go");
+
+const play=document.getElementById("ellen-play");
+const vol=document.getElementById("ellen-vol");
+
+const progress=document.getElementById("ellen-progress");
+
+const title=document.getElementById("ellen-title");
+
+const playlistDiv=document.getElementById("playlist");
 
 let ytPlayer;
-let playlist = [];
-let currentIndex = -1;
-let playing = false;
+let playlist=[];
+let currentIndex=-1;
+let playing=false;
 let progressUpdater;
 
-// --- YouTube Player API ---
+
+
 function onYouTubeIframeAPIReady(){
-    ytPlayer = new YT.Player('ellen-player', {
-        height: '0', width: '0',
-        playerVars: { autoplay: 0, controls: 0, modestbranding:1 },
-        events: { 'onStateChange': onPlayerStateChange }
-    });
+
+ytPlayer=new YT.Player("ellen-player",{
+
+height:"0",
+width:"0",
+
+playerVars:{
+autoplay:0,
+controls:0,
+modestbranding:1
+},
+
+events:{
+onStateChange:onPlayerStateChange
 }
 
-// --- Playlist render ---
+});
+
+}
+
+
+
 function renderPlaylist(){
-    playlistDiv.innerHTML = '';
-    playlist.forEach((t,i)=>{
-        const div = document.createElement('div');
-        div.className='track'+(i===currentIndex?' active':'');
-        div.innerText = t.titulo;
-        div.onclick = ()=>{ currentIndex=i; reproducirActual(); };
-        playlistDiv.appendChild(div);
-    });
+
+playlistDiv.innerHTML="";
+
+playlist.forEach((t,i)=>{
+
+const div=document.createElement("div");
+
+div.className="track"+(i===currentIndex?" active":"");
+
+div.innerText=t.titulo;
+
+div.onclick=()=>{
+
+currentIndex=i;
+
+reproducirActual();
+
+};
+
+playlistDiv.appendChild(div);
+
+});
+
 }
 
-// --- Play current ---
+
+
 function reproducirActual(){
-    if(currentIndex<0 || currentIndex>=playlist.length) return;
-    const id = playlist[currentIndex].id;
-    title.innerText = playlist[currentIndex].titulo;
-    ytPlayer.loadVideoById(id);
-    playing=true;
-    play.innerText="⏸";
-    renderPlaylist();
-    startProgressUpdater();
+
+if(currentIndex<0) return;
+
+const vid=playlist[currentIndex];
+
+title.innerText=vid.titulo;
+
+ytPlayer.loadVideoById(vid.id);
+
+playing=true;
+
+play.innerText="⏸";
+
+renderPlaylist();
+
+startProgressUpdater();
+
 }
 
-// --- Next song or loop ---
+
+
 function onPlayerStateChange(e){
-    if(e.data===YT.PlayerState.ENDED){
-        if(currentIndex+1<playlist.length){
-            currentIndex++;
-            reproducirActual();
-        } else {
-            playing=false;
-            play.innerText="▶";
-            resetProgress();
-        }
-    }
+
+if(e.data===YT.PlayerState.ENDED){
+
+playing=false;
+
+play.innerText="▶";
+
+resetProgress();
+
 }
 
-// --- Play/Pause ---
-play.onclick = ()=>{
-    if(!ytPlayer) return;
-    const estado = ytPlayer.getPlayerState();
-    if(estado===YT.PlayerState.PLAYING){
-        ytPlayer.pauseVideo();
-        play.innerText="▶";
-        playing=false;
-    } else {
-        if(currentIndex===-1 && playlist.length>0) currentIndex=0;
-        reproducirActual();
-    }
+}
+
+
+
+play.onclick=()=>{
+
+if(!ytPlayer) return;
+
+const estado=ytPlayer.getPlayerState();
+
+if(estado===YT.PlayerState.PLAYING){
+
+ytPlayer.pauseVideo();
+
+playing=false;
+
+play.innerText="▶";
+
+}else{
+
+if(currentIndex===-1 && playlist.length){
+
+currentIndex=0;
+
+}
+
+reproducirActual();
+
+}
+
 };
 
-// --- Volume ---
-vol.oninput = e=>{
-    if(ytPlayer) ytPlayer.setVolume(e.target.value*100);
+
+
+vol.oninput=e=>{
+
+if(ytPlayer){
+
+ytPlayer.setVolume(e.target.value*100);
+
+}
+
 };
 
-// --- Progress ---
-progress.oninput = e=>{
-    if(ytPlayer && ytPlayer.getDuration()){
-        const seekTo = (e.target.value/100)*ytPlayer.getDuration();
-        ytPlayer.seekTo(seekTo,true);
-    }
+
+
+progress.oninput=e=>{
+
+if(ytPlayer && ytPlayer.getDuration()){
+
+const t=(e.target.value/100)*ytPlayer.getDuration();
+
+ytPlayer.seekTo(t,true);
+
+}
+
 };
+
+
 
 function startProgressUpdater(){
-    clearInterval(progressUpdater);
-    progressUpdater=setInterval(()=>{
-        if(ytPlayer && ytPlayer.getDuration()){
-            progress.value=(ytPlayer.getCurrentTime()/ytPlayer.getDuration())*100;
-        }
-    },500);
-}
-function resetProgress(){ progress.value=0; clearInterval(progressUpdater); }
 
-// --- Buscar ---
-go.onclick = ()=>buscar(input.value);
-input.onkeypress = e=>{ if(e.key==="Enter") buscar(input.value); };
+clearInterval(progressUpdater);
+
+progressUpdater=setInterval(()=>{
+
+if(ytPlayer && ytPlayer.getDuration()){
+
+progress.value=
+
+(ytPlayer.getCurrentTime()/
+
+ytPlayer.getDuration())*100;
+
+}
+
+},500);
+
+}
+
+
+
+function resetProgress(){
+
+progress.value=0;
+
+clearInterval(progressUpdater);
+
+}
+
+
+
+go.onclick=()=>buscar(input.value);
+
+input.onkeypress=e=>{
+
+if(e.key==="Enter") buscar(input.value);
+
+};
+
+
 
 function buscar(q){
-    if(!q) return;
-    title.innerText="Buscando...";
-    fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(q)}&key=AIzaSyDIAfpLJ3GqYpBDUfvCSWaXox8iSw0_R1w`)
-    .then(res=>res.json())
-    .then(data=>{
-        if(!data.items || data.items.length===0){
-            title.innerText="No encontrado";
-            return;
-        }
-        const video=data.items[0];
-        playlist.push({id:video.id.videoId,titulo:video.snippet.title});
-        if(currentIndex===-1) currentIndex=0;
-        if(!playing) reproducirActual();
-        renderPlaylist();
-    })
-    .catch(err=>{ console.error(err); title.innerText="Error buscando la canción"; });
+
+if(!q) return;
+
+title.innerText="Buscando...";
+
+fetch(
+
+"https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q="+encodeURIComponent(q)+"&key=AIzaSyDIAfpLJ3GqYpBDUfvCSWaXox8iSw0_R1w"
+
+)
+
+.then(r=>r.json())
+
+.then(data=>{
+
+if(!data.items?.length){
+
+title.innerText="No encontrado";
+
+return;
+
 }
 
-// --- Show/Hide UI ---
-btn.onclick = ()=>{ ui.style.display = ui.style.display==="none"?"block":"none"; };
+const v=data.items[0];
 
-// --- Drag ---
-let drag=false, ox, oy;
-btn.onmousedown=e=>{
-    drag=false; ox=e.clientX-wrap.offsetLeft; oy=e.clientY-wrap.offsetTop;
-    document.onmousemove=ev=>{
-        drag=true;
-        wrap.style.left=(ev.clientX-ox)+"px";
-        wrap.style.top=(ev.clientY-oy)+"px";
-        wrap.style.right="auto";
-    };
-    document.onmouseup=()=>{ document.onmousemove=null; };
+playlist.push({
+
+id:v.id.videoId,
+
+titulo:v.snippet.title
+
+});
+
+if(currentIndex===-1) currentIndex=0;
+
+reproducirActual();
+
+});
+
+}
+
+
+
+/* abrir cerrar panel */
+btn.onclick=()=>{
+
+ui.style.display=
+
+ui.style.display==="block"
+
+?"none"
+
+:"block";
+
 };
+
+
+
+/* mover */
+let drag=false,ox,oy;
+
+btn.onmousedown=e=>{
+
+ox=e.clientX-wrap.offsetLeft;
+
+oy=e.clientY-wrap.offsetTop;
+
+document.onmousemove=ev=>{
+
+wrap.style.left=(ev.clientX-ox)+"px";
+
+wrap.style.top=(ev.clientY-oy)+"px";
+
+wrap.style.right="auto";
+
+};
+
+document.onmouseup=()=>{
+
+document.onmousemove=null;
+
+};
+
+};
+
 </script>
+
 </body>
 </html>
