@@ -10,20 +10,17 @@
 html,body{
 background:transparent !important;
 margin:0;
-padding:0;
+height:100%;
 overflow:visible;
-font-family:"Segoe UI",sans-serif;
-color:white;
+pointer-events:none;
 }
 
-/* contenedor general */
+/* permite usar el reproductor */
 #ellen-wrap{
-position:absolute;
+pointer-events:auto;
+position:fixed;
 top:150px;
 right:40px;
-width:320px;
-z-index:999999;
-user-select:none;
 }
 
 /* burbuja tiburon */
